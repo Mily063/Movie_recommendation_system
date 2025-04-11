@@ -1,10 +1,14 @@
+import os
+
 import streamlit as st
 from Recommender.content_based import ContentBasedModel
 from Recommender.fetcher import MovieFetcher
 from UI.interface import get_user_preferences
 
-# Hardcoded API key
-API_KEY = "6a765a8ba3b3211498ff1a06f9b42cc4"
+API_KEY = os.getenv("TMDB_API_KEY")
+
+if not API_KEY:
+    raise ValueError("API key not found. Please set the TMDB_API_KEY environment variable.")
 
 def main():
     st.title("🎬 Movie Recommendation System")

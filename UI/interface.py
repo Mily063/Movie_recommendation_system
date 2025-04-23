@@ -1,14 +1,86 @@
 import streamlit as st
+import random
 
 
 def get_user_preferences():
-    st.title("🎬 System Rekomendacji Filmów")
-    genres = st.multiselect("Wybierz ulubione gatunki:",
-                            ["Action", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Thriller"])
-    min_rating = st.slider("Minimalna ocena filmu:", 0.0, 10.0, 7.0)
-    release_year = st.slider("Zakres lat wydania:", 1900, 2025, (2000, 2025))
+    """
+    Get user preferences for movie recommendations.
+
+    Returns:
+        dict: User preferences including genres, min_rating, release_year, and user_id
+    """
+    # Create tabs for different preference input methods
+    basic_tab, advanced_tab = st.tabs(["Basic Preferences", "Advanced Preferences"])
+
+    with basic_tab:
+        # Basic preferences
+        genres = st.multiselect(
+            "Select your favorite genres:",
+            ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", 
+             "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
+             "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"]
+        )
+
+        min_rating = st.slider("Minimum movie rating:", 0.0, 10.0, 7.0)
+        release_year = st.slider("Release year range:", 1900, 2025, (2000, 2025))
+
+    with advanced_tab:
+        # Advanced preferences for personalization
+        st.subheader("Personalization Settings")
+
+        # Simulate user login for personalization
+        user_id = st.number_input(
+            "User ID (for personalization):", 
+            min_value=1, 
+            max_value=100, 
+            value=random.randint(1, 100),
+            help="In a real system, this would be your account ID. For demo purposes, a random ID is generated."
+        )
+
+        # Additional preferences that could be used by advanced models
+        st.write("Movie Mood Preferences:")
+        mood_cols = st.columns(3)
+        with mood_cols[0]:
+            want_popular = st.checkbox("Popular movies", value=True)
+        with mood_cols[1]:
+            want_recent = st.checkbox("Recent releases", value=True)
+        with mood_cols[2]:
+            want_diverse = st.checkbox("Diverse recommendations", value=True)
+
+        # Movie length preference
+        duration_preference = st.select_slider(
+            "Preferred movie length:",
+            options=["Short (<90 min)", "Medium (90-120 min)", "Long (>120 min)", "No preference"],
+            value="No preference"
+        )
+
+        # Language preference
+        language_preference = st.multiselect(
+            "Preferred languages:",
+            ["English", "Spanish", "French", "German", "Japanese", "Korean", "Chinese", "Other"],
+            default=["English"]
+        )
 
     # Add a submit button
-    if st.button("Submit"):
-        return {"genres": genres, "min_rating": min_rating, "release_year": release_year}
+    if st.button("Get Recommendations"):
+        # Combine basic and advanced preferences
+        preferences = {
+            "genres": genres,
+            "min_rating": min_rating,
+            "release_year": release_year,
+            "user_id": user_id
+        }
+
+        # Add advanced preferences if they were set
+        if 'want_popular' in locals():
+            preferences.update({
+                "want_popular": want_popular,
+                "want_recent": want_recent,
+                "want_diverse": want_diverse,
+                "duration_preference": duration_preference,
+                "language_preference": language_preference
+            })
+
+        return preferences
+
     return None

@@ -12,14 +12,11 @@ class CollaborativeFilteringModel(RecommendationModel):
         self.movies_df = movies_df
         self.ratings_df = ratings_df
         
-        # If no ratings are provided, create a dummy ratings dataframe
         if self.ratings_df is None:
             self.ratings_df = self._create_dummy_ratings()
         
-        # Create user-item matrix
         self.user_item_matrix = self._create_user_item_matrix()
         
-        # Compute similarity matrix
         self.similarity_matrix = self._compute_similarity_matrix()
     
     def _create_dummy_ratings(self):

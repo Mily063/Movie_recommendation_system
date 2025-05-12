@@ -16,14 +16,12 @@ if not API_KEY:
 def main():
     st.title("🎬 Movie Recommendation System")
 
-    # Add sidebar for model selection
     st.sidebar.title("Recommendation Settings")
     model_type = st.sidebar.selectbox(
         "Select Recommendation Model",
         ["Content-Based", "Collaborative Filtering", "Hybrid", "Matrix Factorization"]
     )
 
-    # Add explanation of the selected model
     if model_type == "Content-Based":
         st.sidebar.info(
             "Content-Based filtering recommends movies similar to what you've liked before, "
@@ -39,7 +37,6 @@ def main():
             "Hybrid recommendation combines Content-Based and Collaborative Filtering approaches "
             "to provide more accurate and diverse recommendations."
         )
-        # Add sliders for weights
         content_weight = st.sidebar.slider("Content-Based Weight", 0.0, 1.0, 0.5, 0.1)
         collab_weight = 1.0 - content_weight
         st.sidebar.text(f"Collaborative Filtering Weight: {collab_weight:.1f}")
@@ -49,16 +46,13 @@ def main():
             "It decomposes the user-item interaction matrix to discover latent factors "
             "that explain observed preferences."
         )
-        # Add slider for number of factors
         n_factors = st.sidebar.slider("Number of Factors", 10, 100, 50, 5)
 
-    # Get user preferences
     preferences = get_user_preferences()
     if preferences is None:
         st.info("Please select your preferences and click Submit.")
         return
 
-    # Fetch movies
     fetcher = MovieFetcher(API_KEY)
     try:
         movies_df = fetcher.fetch_popular_movies(pages=2)
@@ -75,7 +69,6 @@ def main():
         st.error("Unexpected data format from the API.")
         return
 
-    # Generate recommendations based on selected model
     if model_type == "Content-Based":
         model = ContentBasedModel(movies_df)
     elif model_type == "Collaborative Filtering":
@@ -104,12 +97,10 @@ def main():
                 genres_str = ", ".join(row['genres'])
                 st.text(f"Genres: {genres_str}")
 
-            # Display additional information if available
             if model_type in ["Hybrid", "Matrix Factorization"] and 'genre_match' in row:
-                # Check for NaN values before passing to progress bar
                 genre_match = row['genre_match']
-                if pd.notna(genre_match):  # Only show progress if genre_match is not NaN
-                    st.progress(min(genre_match, 3) / 3)  # Normalize to 0-1 range
+                if pd.notna(genre_match):
+                    st.progress(min(genre_match, 3) / 3)
 
             st.markdown("---")
 

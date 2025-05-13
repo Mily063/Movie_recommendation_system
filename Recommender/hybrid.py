@@ -4,48 +4,62 @@ from Recommender.base import RecommendationModel
 from Recommender.content_based import ContentBasedModel
 from Recommender.collaborative_filtering import CollaborativeFilteringModel
 
-class HybridRecommendationModel(RecommendationModel):
-    """
-    Hybrid recommendation model that combines content-based and collaborative filtering approaches.
-    This demonstrates advanced inheritance by using composition rather than direct inheritance
-    from multiple classes, which is generally a better practice in Python.
-    """
-    def __init__(self, movies_df, ratings_df=None, content_weight=0.5, collab_weight=0.5):
-        self.movies_df = movies_df
-        self.content_model = ContentBasedModel(movies_df)
-        self.collaborative_model = CollaborativeFilteringModel(movies_df, ratings_df)
 
-        # Weights for combining recommendations
+class HybridRecommendationModel(RecommendationModel):
+    def __init__(self, movies_df, content_weight=0.5, collab_weight=0.5):
+        from Recommender.content_based import ContentBasedModel
+        from Recommender.collaborative_filtering import CollaborativeFilteringModel
+
+        self.movies_df = movies_df
         self.content_weight = content_weight
         self.collab_weight = collab_weight
-
-        # Normalize weights
-        total_weight = self.content_weight + self.collab_weight
-        self.content_weight /= total_weight
-        self.collab_weight /= total_weight
+        self.content_model = ContentBasedModel(movies_df)
+        self.collaborative_model = CollaborativeFilteringModel(movies_df)
 
     def recommend(self, preferences: dict, n: int = 5):
-        """
-        Generate recommendations using a hybrid approach.
+        # Pobierz rekomendacje z dwóch modeli
+        rec_content = self.content_model.recommend(preferences, n=20)
+        rec_collab = self.collaborative_model.recommend(preferences, n=20)
 
-        Args:
-            preferences: Dictionary containing user preferences
-            n: Number of recommendations to return
+        # Nadaj wagę i połącz po score (tu uproszczone: vote_average + waga za miejsce w rankingu)
+        rec_content = rec_content.copy()
+        rec_collab = rec_collab.copy()
+        rec_content['hybrid_score'] = self.content_weight * (
+                rec_content['vote_average'].rank(method='min', ascending=False) / rec_content.shape[0]
+        )
+        rec_collab['hybrid_score'] = self.collab_weight * (
+                rec_collab['vote_average'].rank(method='min', ascending=False) / rec_collab.shape[0]
+        )
+        combined = pd.concat([rec_content, rec_collab])
+        combined = combined.groupby('id').agg({
+            'title': 'first',
+            'genres': 'first',
+            'vote_average': 'mean',
+            'release_date': 'first',
+            'hybrid_score': 'sum'
+        }).reset_index()
 
-        Returns:
-            DataFrame of recommended movies
-        """
-        # Get recommendations from each model
-        content_recs = self.content_model.recommend(preferences, n=n*2)
-        collab_recs = self.collaborative_model.recommend(preferences, n=n*2)
+        # Filtrowanie końcowe wg preferencji
+        min_rating = preferences.get('min_rating', 7.0)
+        year_range = preferences.get('release_year', (1900, 2025))
+        preferred_genres = preferences.get('genres', [])
 
-        # Combine recommendations with weights
-        combined_recs = self._combine_recommendations(content_recs, collab_recs)
+        filtered = combined[
+            (combined['vote_average'] >= min_rating) &
+            (combined['release_date'].str[:4].astype(float).between(*year_range))
+            ].copy()
 
-        # Apply diversity enhancement
-        diverse_recs = self._enhance_diversity(combined_recs, n)
-
-        return diverse_recs.head(n)
+        # Priorytetyzacja po preferred_genres
+        if preferred_genres:
+            filtered['genre_match'] = filtered['genres'].apply(
+                lambda g: sum(genre in g for genre in preferred_genres)
+            )
+            filtered = filtered.sort_values(['genre_match', 'hybrid_score', 'vote_average'],
+                                            ascending=[False, False, False])
+        else:
+            filtered = filtered.sort_values(['hybrid_score', 'vote_average'], ascending=[False, False])
+        filtered = filtered.drop_duplicates(subset=['id'])
+        return filtered.head(n)
 
     def _combine_recommendations(self, content_recs, collab_recs):
         """
@@ -163,70 +177,83 @@ class HybridRecommendationModel(RecommendationModel):
 
 
 class MatrixFactorizationModel(RecommendationModel):
-    """
-    Matrix Factorization recommendation model using Singular Value Decomposition (SVD).
-    This is a technique commonly used by Netflix and other streaming platforms.
-    """
-    def __init__(self, movies_df, ratings_df=None, n_factors=50):
+    def __init__(self, movies_df, n_factors=50, ratings_df=None):
         self.movies_df = movies_df
-        self.ratings_df = ratings_df
         self.n_factors = n_factors
-
-        # If no ratings are provided, create dummy ratings
-        if self.ratings_df is None:
-            self.ratings_df = self._create_dummy_ratings()
-
-        # Create user-item matrix
+        self.ratings_df = ratings_df if ratings_df is not None else self._create_dummy_ratings()
         self.user_item_matrix = self._create_user_item_matrix()
-
-        # Perform matrix factorization
         self.U, self.sigma, self.Vt = self._perform_svd()
 
     def _create_dummy_ratings(self):
-        """Create dummy ratings data for demonstration purposes."""
-        # Similar to the method in CollaborativeFilteringModel
         n_users = 100
         n_movies = len(self.movies_df)
-
         ratings = []
         for user_id in range(1, n_users + 1):
-            n_ratings = np.random.randint(1, 11)
+            n_ratings = np.random.randint(5, 15)
             movie_indices = np.random.choice(n_movies, n_ratings, replace=False)
-
             for idx in movie_indices:
                 movie_id = self.movies_df.iloc[idx].get('id', idx)
                 rating = np.random.uniform(1, 5)
-                ratings.append({
-                    'user_id': user_id,
-                    'movie_id': movie_id,
-                    'rating': rating
-                })
-
+                ratings.append({'user_id': user_id, 'movie_id': movie_id, 'rating': rating})
         return pd.DataFrame(ratings)
 
     def _create_user_item_matrix(self):
-        """Create a user-item matrix from ratings data."""
         return self.ratings_df.pivot_table(
-            index='user_id', 
-            columns='movie_id', 
+            index='user_id',
+            columns='movie_id',
             values='rating',
             fill_value=0
         )
 
     def _perform_svd(self):
-        """Perform Singular Value Decomposition on the user-item matrix."""
-        # Fill missing values with zeros
-        matrix = self.user_item_matrix.fillna(0).values
-
-        # Perform SVD
-        U, sigma, Vt = np.linalg.svd(matrix, full_matrices=False)
-
-        # Truncate to n_factors
-        U = U[:, :self.n_factors]
-        sigma = sigma[:self.n_factors]
-        Vt = Vt[:self.n_factors, :]
-
+        import numpy as np
+        from scipy.sparse.linalg import svds
+        mat = self.user_item_matrix.values
+        U, sigma, Vt = svds(mat, k=min(self.n_factors, min(mat.shape) - 1))
         return U, sigma, Vt
+
+    def recommend(self, preferences: dict, n: int = 5):
+        import numpy as np
+        user_id = preferences.get('user_id', None)
+        min_rating = preferences.get('min_rating', 7.0)
+        release_year = preferences.get('release_year', (1900, 2025))
+        preferred_genres = preferences.get('genres', [])
+
+        # Dobór użytkownika
+        if user_id is None or user_id not in self.user_item_matrix.index:
+            user_id = np.random.choice(self.user_item_matrix.index)
+        user_idx = self.user_item_matrix.index.get_loc(user_id)
+
+        # Przewidziane oceny
+        user_ratings_pred = np.dot(self.U[user_idx], np.dot(np.diag(self.sigma), self.Vt))
+        all_movie_ids = self.user_item_matrix.columns
+
+        # Wykluczaj już ocenione
+        already_rated = set(self.user_item_matrix.loc[user_id][self.user_item_matrix.loc[user_id] > 0].index)
+        recommend_ids = [mid for i, mid in enumerate(all_movie_ids) if
+                         mid not in already_rated and user_ratings_pred[i] > 3.0]
+
+        rec_movies = self.movies_df[self.movies_df['id'].isin(recommend_ids)].copy()
+        rec_movies['mf_score'] = rec_movies['id'].map(
+            dict(zip(all_movie_ids, user_ratings_pred))
+        )
+
+        # Filtracja końcowa
+        filtered = rec_movies[
+            (rec_movies['vote_average'] >= min_rating) &
+            (rec_movies['release_date'].str[:4].astype(float).between(*release_year))
+            ].copy()
+
+        if preferred_genres:
+            filtered['genre_match'] = filtered['genres'].apply(
+                lambda g: sum(genre in g for genre in preferred_genres)
+            )
+            filtered = filtered.sort_values(['genre_match', 'mf_score', 'vote_average'],
+                                            ascending=[False, False, False])
+        else:
+            filtered = filtered.sort_values(['mf_score', 'vote_average'], ascending=[False, False])
+        filtered = filtered.drop_duplicates(subset=['id'])
+        return filtered.head(n)
 
     def _predict_ratings(self, user_idx):
         """Predict ratings for a user based on the factorized matrices."""
@@ -283,7 +310,7 @@ class MatrixFactorizationModel(RecommendationModel):
         # If preferred genres are specified, prioritize those
         if 'genres' in preferences and preferences['genres']:
             preferred_genres = preferences['genres']
-            filtered['genre_match'] = filtered['genres'].apply(
+            filtered.loc[:, 'genre_match'] = filtered['genres'].apply(
                 lambda g: sum(genre in g for genre in preferred_genres)
             )
             return filtered.sort_values(['genre_match', 'vote_average'], ascending=[False, False]).head(n)

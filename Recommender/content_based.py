@@ -9,10 +9,16 @@ class ContentBasedModel(RecommendationModel):
         min_rating = preferences.get('min_rating', 7.0)
         release_year_range = preferences.get('release_year', (1900, 2025))
 
+        # Filter by genres and ratings first
         filtered = self.movies_df[
             (self.movies_df['genres'].apply(lambda g: any(genre in g for genre in preferred_genres))) &
-            (self.movies_df['vote_average'] >= min_rating) &
-            (self.movies_df['release_date'].str[:4].astype(int).between(*release_year_range))
+            (self.movies_df['vote_average'] >= min_rating)
+            ]
+
+        # Then filter by release year with proper handling of empty/invalid dates
+        filtered = filtered[
+            filtered['release_date'].str[:4].str.match(r'\d{4}', na=False) &
+            filtered['release_date'].str[:4].astype(float).between(*release_year_range)
             ]
 
         return filtered.sort_values('vote_average', ascending=False).head(n)

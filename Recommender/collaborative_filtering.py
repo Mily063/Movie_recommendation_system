@@ -69,16 +69,16 @@ class CollaborativeFilteringModel(RecommendationModel):
         if user_id is None or user_id not in self.user_item_matrix.index:
             user_id = np.random.choice(self.user_item_matrix.index)
 
-        # Dobierz losowych sąsiadów spośród najbardziej podobnych
+        # Dobranie podobnych użytkowników
         similar_users = self._get_similar_users(user_id, n=10)
         similar_users_ratings = self.user_item_matrix.loc[similar_users]
         mean_ratings = similar_users_ratings.mean()
 
-        # Usuń filmy już ocenione przez użytkownika
+        # Usuwanie filmów już ocenionych przez użytkownika
         user_rated = set(self.user_item_matrix.loc[user_id][self.user_item_matrix.loc[user_id] > 0].index)
         candidate_ids = [mid for mid in mean_ratings.index if mid not in user_rated and mean_ratings[mid] > 0]
 
-        # Wstępnie wybierz tylko te filmy, które spełniają filtry (możesz wprowadzić dalsze ograniczenia niżej)
+        # Wstępnie tylko te filmy, które spełniają filtry
         candidates_df = self.movies_df[self.movies_df['id'].isin(candidate_ids)].copy()
 
         # Filtrowanie po roku i ocenach

@@ -4,7 +4,6 @@ class ContentBasedModel(RecommendationModel):
     def __init__(self, movies_df):
         self.movies_df = movies_df
 
-    # ... (reszta klasy)
 
     def recommend(self, preferences: dict, n: int = 5):
         preferred_genres = preferences.get('genres', [])
@@ -17,13 +16,12 @@ class ContentBasedModel(RecommendationModel):
             (self.movies_df['vote_average'] >= min_rating)
             ]
 
-        # Następnie filtruj po dacie wydania
+        # Filter by release year
         filtered = filtered[
             filtered['release_date'].str[:4].str.match(r'\d{4}', na=False) &
             filtered['release_date'].str[:4].astype(float).between(*release_year_range)
             ]
 
-        # USUŃ duplikaty na podstawie ID filmu (często to pole nazywa się 'id')
         filtered = filtered.drop_duplicates(subset=['id'])
 
         return filtered.sort_values('vote_average', ascending=False).head(n)

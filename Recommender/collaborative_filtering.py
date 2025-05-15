@@ -57,32 +57,31 @@ class CollaborativeFilteringModel(RecommendationModel):
         self.similarity_matrix = self._compute_similarity_matrix()
 
     def recommend(self, preferences: dict, n: int = 5):
-        # 1. Za każdym razem generuj nową macierz ocen — gwarancja unikalnych wyników
         self.regenerate_dummy_ratings()
 
-        # 2. Pobierz preferencje użytkownika (lub ustaw domyślne)
+        # Pobranie preferencje użytkownika
         user_id = preferences.get('user_id', None)
         preferred_genres = preferences.get('genres', [])
         min_rating = preferences.get('min_rating', 1.0)
         release_year_range = preferences.get('release_year', (1900, 2025))
 
-        # 3. Losowy user_id jeśli nie podano lub nie istnieje
+        # Losowy user_id jeśli nie podano lub nie istnieje
         if user_id is None or user_id not in self.user_item_matrix.index:
             user_id = np.random.choice(self.user_item_matrix.index)
 
-        # 4. Dobierz losowych sąsiadów spośród najbardziej podobnych (np. 10 z 30)
+        # Dobierz losowych sąsiadów spośród najbardziej podobnych
         similar_users = self._get_similar_users(user_id, n=10)
         similar_users_ratings = self.user_item_matrix.loc[similar_users]
         mean_ratings = similar_users_ratings.mean()
 
-        # 5. Usuń filmy już ocenione przez użytkownika
+        # Usuń filmy już ocenione przez użytkownika
         user_rated = set(self.user_item_matrix.loc[user_id][self.user_item_matrix.loc[user_id] > 0].index)
         candidate_ids = [mid for mid in mean_ratings.index if mid not in user_rated and mean_ratings[mid] > 0]
 
-        # 6. Wstępnie wybierz tylko te filmy, które spełniają filtry (możesz wprowadzić dalsze ograniczenia niżej)
+        # Wstępnie wybierz tylko te filmy, które spełniają filtry (możesz wprowadzić dalsze ograniczenia niżej)
         candidates_df = self.movies_df[self.movies_df['id'].isin(candidate_ids)].copy()
 
-        # 6. Filtrowanie po roku i ocenach
+        # Filtrowanie po roku i ocenach
         if 'release_date' in candidates_df.columns:
             release_years = candidates_df['release_date'].astype(str).str[:4]
             mask_year = release_years.str.match(r'\d{4}', na=False)
@@ -92,14 +91,12 @@ class CollaborativeFilteringModel(RecommendationModel):
         if 'vote_average' in candidates_df.columns:
             candidates_df = candidates_df[candidates_df['vote_average'] >= min_rating]
 
-        # 7. Filtrowanie po gatunku
+        # Filtrowanie po gatunku
         if preferred_genres and 'genres' in candidates_df.columns:
             candidates_df = candidates_df[candidates_df['genres'].apply(lambda genres: any(g in genres for g in preferred_genres))]
 
-        # --- TU ZABEZPIECZENIE:
         if candidates_df.empty or 'id' not in candidates_df.columns:
             fallback = self.movies_df.copy()
-            # Stosuj te same filtry!
             if preferred_genres and 'genres' in fallback.columns:
                 fallback = fallback[fallback['genres'].apply(lambda genres: any(g in genres for g in preferred_genres))]
             if 'release_date' in fallback.columns:
@@ -112,21 +109,15 @@ class CollaborativeFilteringModel(RecommendationModel):
                 fallback = fallback[fallback['vote_average'] >= min_rating]
             fallback['rnd'] = np.random.uniform(0, 0.01, size=len(fallback))
             return fallback.sort_values('rnd', ascending=False).head(n)
-        # ----
 
         candidates_df['collab_score'] = candidates_df['id'].map(mean_ratings)
-        # 10. Wprowadź delikatną losowość — przy tych samych danych wyniki się mogą zmieniać
         candidates_df['rnd'] = np.random.uniform(0, 0.01, size=len(candidates_df))
-
-        # 11. Sortuj: najpierw collaborative score, potem losowość
         candidates_df = candidates_df.sort_values(['collab_score', 'rnd'], ascending=False)
 
-        # 12. Wybierz top N wyników
         result = candidates_df.drop_duplicates(subset=['id']).head(n)
         if not result.empty:
             return result
 
-        # 13. Fallback — jeżeli nic nie znaleziono, wybierz z całej bazy, ale też stosuj filtry
         fallback = self.movies_df[~self.movies_df['id'].isin(user_rated)].copy()
         if preferred_genres and 'genres' in fallback.columns:
             fallback = fallback[fallback['genres'].apply(lambda genres: any(g in genres for g in preferred_genres))]

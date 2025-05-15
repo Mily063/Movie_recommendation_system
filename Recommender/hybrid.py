@@ -21,7 +21,6 @@ class HybridRecommendationModel(RecommendationModel):
         rec_content = self.content_model.recommend(preferences, n=20)
         rec_collab = self.collaborative_model.recommend(preferences, n=20)
 
-        # Nadaj wagę i połącz po score (tu uproszczone: vote_average + waga za miejsce w rankingu)
         rec_content = rec_content.copy()
         rec_collab = rec_collab.copy()
         rec_content['hybrid_score'] = self.content_weight * (
@@ -206,14 +205,12 @@ class MatrixFactorizationModel(RecommendationModel):
         )
 
     def _perform_svd(self):
-        import numpy as np
         from scipy.sparse.linalg import svds
         mat = self.user_item_matrix.values
         U, sigma, Vt = svds(mat, k=min(self.n_factors, min(mat.shape) - 1))
         return U, sigma, Vt
 
     def recommend(self, preferences: dict, n: int = 5):
-        import numpy as np
         user_id = preferences.get('user_id', None)
         min_rating = preferences.get('min_rating', 7.0)
         release_year = preferences.get('release_year', (1900, 2025))
@@ -315,5 +312,4 @@ class MatrixFactorizationModel(RecommendationModel):
             )
             return filtered.sort_values(['genre_match', 'vote_average'], ascending=[False, False]).head(n)
 
-        # Otherwise, just sort by rating
         return filtered.sort_values('vote_average', ascending=False).head(n)

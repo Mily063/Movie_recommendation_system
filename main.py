@@ -11,7 +11,10 @@ from UI.interface import get_user_preferences
 API_KEY = os.getenv("TMDB_API_KEY")
 
 if not API_KEY:
-    raise ValueError("API key not found. Please set the TMDB_API_KEY environment variable.")
+    raise ValueError(
+        "API key not found. Please set the TMDB_API_KEY environment variable."
+    )
+
 
 def main():
     st.title("🎬 Movie Recommendation System")
@@ -19,7 +22,7 @@ def main():
     st.sidebar.title("Recommendation Settings")
     model_type = st.sidebar.selectbox(
         "Select Recommendation Model",
-        ["Content-Based", "Collaborative Filtering", "Hybrid", "Matrix Factorization"]
+        ["Content-Based", "Collaborative Filtering", "Hybrid", "Matrix Factorization"],
     )
 
     if model_type == "Content-Based":
@@ -64,7 +67,7 @@ def main():
         return
 
     # Ensure required columns exist
-    required_columns = {'genres', 'vote_average', 'title'}
+    required_columns = {"genres", "vote_average", "title"}
     if not required_columns.issubset(movies_df.columns):
         st.error("Unexpected data format from the API.")
         return
@@ -75,9 +78,7 @@ def main():
         model = CollaborativeFilteringModel(movies_df)
     elif model_type == "Hybrid":
         model = HybridRecommendationModel(
-            movies_df, 
-            content_weight=content_weight,
-            collab_weight=collab_weight
+            movies_df, content_weight=content_weight, collab_weight=collab_weight
         )
     elif model_type == "Matrix Factorization":
         model = MatrixFactorizationModel(movies_df, n_factors=n_factors)
@@ -93,17 +94,20 @@ def main():
             st.markdown(f"**{row['title']}** – ⭐ {row['vote_average']:.1f}")
 
             # Display genre information if available
-            if 'genres' in row and row['genres']:
-                genres_str = ", ".join(row['genres'])
+            if "genres" in row and row["genres"]:
+                genres_str = ", ".join(row["genres"])
                 st.text(f"Genres: {genres_str}")
 
-            if model_type in ["Hybrid", "Matrix Factorization"] and 'genre_match' in row:
-                genre_match = row['genre_match']
+            if (
+                model_type in ["Hybrid", "Matrix Factorization"]
+                and "genre_match" in row
+            ):
+                genre_match = row["genre_match"]
                 if pd.notna(genre_match):
                     st.progress(min(genre_match, 3) / 3)
 
             st.markdown("---")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

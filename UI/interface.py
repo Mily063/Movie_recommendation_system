@@ -8,9 +8,27 @@ def get_user_preferences():
     with basic_tab:
         genres = st.multiselect(
             "Select your favorite genres:",
-            ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", 
-             "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
-             "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"]
+            [
+                "Action",
+                "Adventure",
+                "Animation",
+                "Comedy",
+                "Crime",
+                "Documentary",
+                "Drama",
+                "Family",
+                "Fantasy",
+                "History",
+                "Horror",
+                "Music",
+                "Mystery",
+                "Romance",
+                "Science Fiction",
+                "TV Movie",
+                "Thriller",
+                "War",
+                "Western",
+            ],
         )
 
         min_rating = st.slider("Minimum movie rating:", 0.0, 10.0, 7.0)
@@ -20,11 +38,11 @@ def get_user_preferences():
         st.subheader("Personalization Settings")
 
         user_id = st.number_input(
-            "User ID (for personalization):", 
-            min_value=1, 
-            max_value=100, 
+            "User ID (for personalization):",
+            min_value=1,
+            max_value=100,
             value=random.randint(1, 100),
-            help="In a real system, this would be your account ID. For demo purposes, a random ID is generated."
+            help="In a real system, this would be your account ID. For demo purposes, a random ID is generated.",
         )
 
         st.write("Movie Mood Preferences:")
@@ -38,14 +56,28 @@ def get_user_preferences():
 
         duration_preference = st.select_slider(
             "Preferred movie length:",
-            options=["Short (<90 min)", "Medium (90-120 min)", "Long (>120 min)", "No preference"],
-            value="No preference"
+            options=[
+                "Short (<90 min)",
+                "Medium (90-120 min)",
+                "Long (>120 min)",
+                "No preference",
+            ],
+            value="No preference",
         )
 
         language_preference = st.multiselect(
             "Preferred languages:",
-            ["English", "Spanish", "French", "German", "Japanese", "Korean", "Chinese", "Other"],
-            default=["English"]
+            [
+                "English",
+                "Spanish",
+                "French",
+                "German",
+                "Japanese",
+                "Korean",
+                "Chinese",
+                "Other",
+            ],
+            default=["English"],
         )
 
     if st.button("Get Recommendations"):
@@ -53,17 +85,19 @@ def get_user_preferences():
             "genres": genres,
             "min_rating": min_rating,
             "release_year": release_year,
-            "user_id": user_id
+            "user_id": user_id,
         }
 
-        if 'want_popular' in locals():
-            preferences.update({
-                "want_popular": want_popular,
-                "want_recent": want_recent,
-                "want_diverse": want_diverse,
-                "duration_preference": duration_preference,
-                "language_preference": language_preference
-            })
+        if "want_popular" in locals():
+            preferences.update(
+                {
+                    "want_popular": want_popular,
+                    "want_recent": want_recent,
+                    "want_diverse": want_diverse,
+                    "duration_preference": duration_preference,
+                    "language_preference": language_preference,
+                }
+            )
 
         return preferences
 

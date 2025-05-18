@@ -16,12 +16,15 @@ def predict_movie_rating(ratings_df, user_id, movie_id, top_n_similar=2):
         Przewidywana ocena filmu
     """
     # Sprawdź, czy użytkownik nie ocenił już filmu
-    if not ratings_df[(ratings_df['user_id'] == user_id) & (ratings_df['movie_id'] == movie_id)].empty:
-        return ratings_df[(ratings_df['user_id'] == user_id) &
-                          (ratings_df['movie_id'] == movie_id)]['rating'].iloc[0]
+    if not ratings_df[
+        (ratings_df["user_id"] == user_id) & (ratings_df["movie_id"] == movie_id)
+    ].empty:
+        return ratings_df[
+            (ratings_df["user_id"] == user_id) & (ratings_df["movie_id"] == movie_id)
+        ]["rating"].iloc[0]
 
     # Znajdź użytkowników, którzy ocenili ten film
-    users_who_rated = ratings_df[ratings_df['movie_id'] == movie_id]['user_id'].unique()
+    users_who_rated = ratings_df[ratings_df["movie_id"] == movie_id]["user_id"].unique()
 
     # TODO: Uzupełnij kod poniżej, aby przewidzieć ocenę filmu
     # 1. Oblicz średnią ocenę filmu (jako wartość domyślną)
@@ -34,9 +37,9 @@ def predict_movie_rating(ratings_df, user_id, movie_id, top_n_similar=2):
 if __name__ == "__main__":
     # Przykładowe dane ocen
     ratings_data = {
-        'user_id': [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
-        'movie_id': [101, 102, 103, 101, 103, 104, 101, 102, 104, 102, 103, 104],
-        'rating': [5.0, 3.0, 4.5, 4.0, 3.5, 5.0, 2.5, 4.0, 4.5, 3.0, 4.0, 3.5]
+        "user_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        "movie_id": [101, 102, 103, 101, 103, 104, 101, 102, 104, 102, 103, 104],
+        "rating": [5.0, 3.0, 4.5, 4.0, 3.5, 5.0, 2.5, 4.0, 4.5, 3.0, 4.0, 3.5],
     }
     ratings_df = pd.DataFrame(ratings_data)
 

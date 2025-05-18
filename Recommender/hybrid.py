@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
 from Recommender.base import RecommendationModel
-from Recommender.content_based import ContentBasedModel
-from Recommender.collaborative_filtering import CollaborativeFilteringModel
-
 
 class HybridRecommendationModel(RecommendationModel):
     def __init__(self, movies_df, content_weight=0.5, collab_weight=0.5):

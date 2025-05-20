@@ -19,11 +19,13 @@ class HybridRecommendationModel(RecommendationModel):
         rec_content = self.content_model.recommend(preferences, n=20)
         rec_collab = self.collaborative_model.recommend(preferences, n=20)
 
-        if (rec_content is None or rec_content.empty) and (
-            rec_collab is None or rec_collab.empty
-        ):
-            # Zwróć pusty DataFrame z zachowaniem kolumn wejściowych
-            return pd.DataFrame(columns=self.movies_df.columns)
+        ##
+        # if (rec_content is None or rec_content.empty) and (
+        #     rec_collab is None or rec_collab.empty
+        # ):
+        #     # Zwróć pusty DataFrame z zachowaniem kolumn wejściowych
+        #     return pd.DataFrame(columns=self.movies_df.columns)
+        ##
 
         rec_content = rec_content.copy()
         rec_collab = rec_collab.copy()

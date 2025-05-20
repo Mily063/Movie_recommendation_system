@@ -53,11 +53,13 @@ def get_common_ratings(ratings_df, user_id1, user_id2):
         Dwie listy ocen wspólnych filmów
     """
     # Pobierz oceny obu użytkowników
-    user1_ratings = ratings_df[ratings_df['user_id'] == user_id1]
-    user2_ratings = ratings_df[ratings_df['user_id'] == user_id2]
+    user1_ratings = ratings_df[ratings_df["user_id"] == user_id1]
+    user2_ratings = ratings_df[ratings_df["user_id"] == user_id2]
 
     # Znajdź wspólne filmy
-    common_movies = set(user1_ratings['movie_id']).intersection(set(user2_ratings['movie_id']))
+    common_movies = set(user1_ratings["movie_id"]).intersection(
+        set(user2_ratings["movie_id"])
+    )
 
     # TODO: Dokończ funkcję
     # 1. Utwórz dwie puste listy: ratings1 i ratings2
@@ -79,17 +81,17 @@ def predict_movie_rating(ratings_df, user_id, movie_id):
         Przewidywana ocena filmu
     """
     # Sprawdź, czy użytkownik już ocenił film
-    user_rating = ratings_df[(ratings_df['user_id'] == user_id) &
-                             (ratings_df['movie_id'] == movie_id)]
+    user_rating = ratings_df[
+        (ratings_df["user_id"] == user_id) & (ratings_df["movie_id"] == movie_id)
+    ]
 
     if not user_rating.empty:
-        return user_rating['rating'].iloc[0]
+        return user_rating["rating"].iloc[0]
 
     # Znajdź użytkowników, którzy ocenili ten film
     users_rated_movie = ratings_df[
-        (ratings_df['movie_id'] == movie_id) &
-        (ratings_df['user_id'] != user_id)
-        ]['user_id'].unique()
+        (ratings_df["movie_id"] == movie_id) & (ratings_df["user_id"] != user_id)
+    ]["user_id"].unique()
 
     if len(users_rated_movie) == 0:
         return calculate_movie_average_rating(ratings_df, movie_id)
@@ -122,9 +124,9 @@ def predict_movie_rating(ratings_df, user_id, movie_id):
 if __name__ == "__main__":
     # Przykładowe dane ocen
     ratings_data = {
-        'user_id': [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
-        'movie_id': [101, 102, 103, 101, 103, 104, 101, 102, 104, 102, 103, 104],
-        'rating': [5.0, 3.0, 4.5, 4.0, 3.5, 5.0, 2.5, 4.0, 4.5, 3.0, 4.0, 3.5]
+        "user_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        "movie_id": [101, 102, 103, 101, 103, 104, 101, 102, 104, 102, 103, 104],
+        "rating": [5.0, 3.0, 4.5, 4.0, 3.5, 5.0, 2.5, 4.0, 4.5, 3.0, 4.0, 3.5],
     }
     ratings_df = pd.DataFrame(ratings_data)
 

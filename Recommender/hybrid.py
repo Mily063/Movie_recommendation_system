@@ -95,11 +95,6 @@ class HybridRecommendationModel(RecommendationModel):
                 content_recs["vote_average"] / content_recs["vote_average"].max()
             )
 
-        if not collab_recs.empty:
-            collab_recs["normalized_score"] = (
-                collab_recs["vote_average"] / collab_recs["vote_average"].max()
-            )
-
         # Combine recommendations
         all_recs = pd.concat([content_recs, collab_recs]).drop_duplicates(subset=["id"])
 
